@@ -1,0 +1,213 @@
+/*
+ * Quad math implementation 
+ * Copyright (c) 2011 Martin Ling
+ *
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the NumPy Developers nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTERS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+#include "quad.h"
+#include "math.h"
+
+#define _QUAT_EPS 1e-6
+
+int
+quad_isnonzero(quad q)
+{
+    return q.w != 0 && q.x != 0;
+}
+
+int
+quad_isnan(quad q)
+{
+    return isnan(q.w) || isnan(q.x);
+}
+
+int
+quad_isinf(quad q)
+{
+    return isinf(q.w) || isinf(q.x);
+}
+
+int
+quad_isfinite(quad q)
+{
+    return isfinite(q.w) && isfinite(q.x);
+}
+/*
+double
+quad_absolute(quad q)
+{
+   return sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+}
+
+quad
+quad_add(quad q1, quad q2)
+{
+   return (quad) {
+      q1.w+q2.w,
+      q1.x+q2.x,
+      q1.y+q2.y,
+      q1.z+q2.z,
+   };
+}
+
+quad
+quad_subtract(quad q1, quad q2)
+{
+   return (quad) {
+      q1.w-q2.w,
+      q1.x-q2.x,
+      q1.y-q2.y,
+      q1.z-q2.z,
+   };
+}
+
+quad
+quad_multiply(quad q1, quad q2)
+{
+   return (quad) {
+      q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z,
+      q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y,
+      q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x,
+      q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w,
+   };
+}
+
+quad
+quad_divide(quad q1, quad q2)
+{
+   double s = q2.w*q2.w + q2.x*q2.x + q2.y*q2.y + q2.z*q2.z;
+   return (quad) {
+      (  q1.w*q2.w + q1.x*q2.x + q1.y*q2.y + q1.z*q2.z) / s,
+      (- q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y) / s,
+      (- q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x) / s,
+      (- q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w) / s
+   };
+}
+
+quad
+quad_multiply_scalar(quad q, double s)
+{
+   return (quad) {s*q.w, s*q.x, s*q.y, s*q.z};
+}
+
+quad
+quad_divide_scalar(quad q, double s)
+{
+   return (quad) {q.w/s, q.x/s, q.y/s, q.z/s};
+}
+
+quad
+quad_log(quad q)
+{
+   double sumvsq = q.x*q.x + q.y*q.y + q.z*q.z;
+   double vnorm = sqrt(sumvsq);
+   if (vnorm > _QUAT_EPS) {
+      double m = sqrt(q.w*q.w + sumvsq);
+      double s = acos(q.w/m) / vnorm;
+      return (quad) {log(m), s*q.x, s*q.y, s*q.z};
+   } else {
+      return (quad) {0, 0, 0, 0};
+   }
+}
+
+quad
+quad_exp(quad q)
+{
+   double vnorm = sqrt(q.x*q.x + q.y*q.y + q.z*q.z);
+   if (vnorm > _QUAT_EPS) {
+      double s = sin(vnorm) / vnorm;
+      double e = exp(q.w);
+      return (quad) {e*cos(vnorm), e*s*q.x, e*s*q.y, e*s*q.z};
+   } else {
+      return (quad) {exp(q.w), 0, 0, 0};
+   }
+}
+
+quad
+quad_power(quad q, quad p)
+{
+   return quad_exp(quad_multiply(quad_log(q), p));
+}
+
+quad
+quad_power_scalar(quad q, double p)
+{
+   return quad_exp(quad_multiply_scalar(quad_log(q), p));
+}
+
+quad
+quad_negative(quad q)
+{
+   return (quad) {-q.w, -q.x, -q.y, -q.z};
+}
+
+quad
+quad_conjugate(quad q)
+{
+   return (quad) {q.w, -q.x, -q.y, -q.z};
+}
+
+quad
+quad_copysign(quad q1, quad q2)
+{
+    return (quad) {
+        copysign(q1.w, q2.w),
+        copysign(q1.x, q2.x),
+        copysign(q1.y, q2.y),
+        copysign(q1.z, q2.z)
+    };
+}
+*/
+int
+quad_equal(quad q1, quad q2)
+{
+    return !quad_isnan(q1) && !quad_isnan(q2) && q1.w == q2.w && q1.x == q2.x;
+}
+
+int
+quad_not_equal(quad q1, quad q2)
+{
+    return !quad_equal(q1, q2);
+}
+
+int
+quad_less(quad q1, quad q2)
+{
+    return
+        (!quad_isnan(q1) &&
+        !quad_isnan(q2)) && (
+            q1.w != q2.w ? q1.w < q2.w :
+            q1.x != q2.x ? q1.x < q2.x : 0);
+}
+
+int
+quad_less_equal(quad q1, quad q2)
+{
+   return
+        (!quad_isnan(q1) &&
+        !quad_isnan(q2)) && (
+            q1.w != q2.w ? q1.w < q2.w :
+            q1.x != q2.x ? q1.x < q2.x : 1);
+}
