@@ -1,9 +1,14 @@
 /*
- * Quad type for NumPy
+ * IEEE 128 bit floating point type for NumPy
+ * 2018 Jack Dale
+ *
+ * Derived from numpy quaternion, copyright information retained below:
+ *
+ * Quaternion type for numpy
  * Copyright (c) 2011 Martin Ling
  *
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -14,7 +19,7 @@
  *     * Neither the name of the NumPy Developers nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -155,6 +160,7 @@ PyTypeObject PyQuadArrType_Type = {
 
 static PyArray_ArrFuncs _PyQuad_ArrFuncs;
 PyArray_Descr *quad_descr;
+
 
 static quad
 MyPyFloat_AsQuad(PyObject *obj)
@@ -345,20 +351,37 @@ QUAD_fillwithscalar(quad *buffer, npy_intp length, quad *value, void *NPY_UNUSED
     }
 }
 
+static void
+QUAD_dot(char *ip1, npy_intp is1, char *ip2, npy_intp is2, char *op, npy_intp n,
+           void *NPY_UNUSED(ignore))
+{
+    quad tmp = 0;
+    npy_intp i;
+
+    for (i = 0; i < n; i++, ip1 += is1, ip2 += is2) {
+        tmp += (*((quad *)ip1)) * (*((quad *)ip2));
+    }
+
+    *op = tmp;
+}
+
 #define MAKE_T_TO_QUAD(TYPE, type)                                             \
 static void                                                                    \
 TYPE ## _to_quad(type *ip, quad *op, npy_intp n,                               \
                PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
 {                                                                              \
-    printf("casting from quad\n");                                             \
+    printf("casting %s to quad, ", #TYPE);                                     \
+    double temp;                                                               \
     while (n--) {                                                              \
-        *op++ = (quad) *ip++;                                                  \
+        temp = (double)  (*ip++);                                              \
+        printf("%lf\n", temp);                                                 \
+        *op++ = (__float128) temp;                                             \
     }                                                                          \
 }
 
-MAKE_T_TO_QUAD(FLOAT, npy_uint32);
-MAKE_T_TO_QUAD(DOUBLE, npy_uint64);
-MAKE_T_TO_QUAD(LONGDOUBLE, npy_longdouble);
+MAKE_T_TO_QUAD(FLOAT, npy_float);
+MAKE_T_TO_QUAD(DOUBLE, npy_double);
+//MAKE_T_TO_QUAD(LONGDOUBLE, npy_longdouble);
 MAKE_T_TO_QUAD(BOOL, npy_bool);
 MAKE_T_TO_QUAD(BYTE, npy_byte);
 MAKE_T_TO_QUAD(UBYTE, npy_ubyte);
@@ -401,15 +424,15 @@ static void                                                                    \
 quad_to_ ## TYPE(quad *ip, type *op, npy_intp n,                               \
                PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
 {                                                                              \
-    printf("casting to quad\n");                                               \
+    printf("casting quad to %s\n", #TYPE);                                     \
     while (n--) {                                                              \
-        *op++ = (type) *ip++;                                                  \
+        *op++ =  (type) *ip++;                                                 \
     }                                                                          \
 }
 
 MAKE_QUAD_TO_T(FLOAT, npy_uint32);
 MAKE_QUAD_TO_T(DOUBLE, npy_uint64);
-MAKE_QUAD_TO_T(LONGDOUBLE, npy_longdouble);
+//MAKE_QUAD_TO_T(LONGDOUBLE, npy_longdouble);
 MAKE_QUAD_TO_T(BOOL, npy_bool);
 MAKE_QUAD_TO_T(BYTE, npy_byte);
 MAKE_QUAD_TO_T(UBYTE, npy_ubyte);
@@ -438,7 +461,7 @@ quad_arrtype_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     } else if (obj != NULL) {
         q = MyPyFloat_AsQuad(obj);
     }
-
+    //PyArray_Descr *descr = PyArray_DescrFromType(NPY_COMPLEX128);
     return PyArray_Scalar(&q, quad_descr, NULL);
 }
 
@@ -483,7 +506,7 @@ quad_arrtype_repr(PyObject *o)
     char str[128];
     quad q = ((PyQuadScalarObject *)o)->obval;
     quadmath_snprintf(str, sizeof(str), "%.36Qg", q);
-    return PyUString_FromString(str);
+    return PyUnicode_FromString(str);
 }
 
 static PyObject *
@@ -492,7 +515,7 @@ quad_arrtype_str(PyObject *o)
     char str[128];
     quad q = ((PyQuadScalarObject *)o)->obval;
     quadmath_snprintf(str, sizeof(str), "%.36Qg", q);
-    return PyString_FromString(str);
+    return PyUnicode_FromString(str);
 }
 
 static PyMethodDef QuadMethods[] = {
@@ -625,6 +648,7 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     _PyQuad_ArrFuncs.argmax = (PyArray_ArgFunc*)QUAD_argmax;
     _PyQuad_ArrFuncs.nonzero = (PyArray_NonzeroFunc*)QUAD_nonzero;
     _PyQuad_ArrFuncs.fillwithscalar = (PyArray_FillWithScalarFunc*)QUAD_fillwithscalar;
+    _PyQuad_ArrFuncs.dotfunc = (PyArray_DotFunc*)QUAD_dot;
 
     _PyQuad_ArrFuncs.cast[NPY_BOOL] = (PyArray_VectorUnaryFunc*)quad_to_BOOL;
     _PyQuad_ArrFuncs.cast[NPY_BYTE] = (PyArray_VectorUnaryFunc*)quad_to_BYTE;
@@ -639,20 +663,24 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     _PyQuad_ArrFuncs.cast[NPY_ULONGLONG] = (PyArray_VectorUnaryFunc*)quad_to_ULONGLONG;
     _PyQuad_ArrFuncs.cast[NPY_FLOAT] = (PyArray_VectorUnaryFunc*)quad_to_FLOAT;
     _PyQuad_ArrFuncs.cast[NPY_DOUBLE] = (PyArray_VectorUnaryFunc*)quad_to_DOUBLE;
-    _PyQuad_ArrFuncs.cast[NPY_LONGDOUBLE] = (PyArray_VectorUnaryFunc*)quad_to_LONGDOUBLE;
+    //_PyQuad_ArrFuncs.cast[NPY_LONGDOUBLE] = (PyArray_VectorUnaryFunc*)quad_to_LONGDOUBLE;
     //_PyQuad_ArrFuncs.cast[NPY_CFLOAT] = (PyArray_VectorUnaryFunc*)quad_to_CFLOAT;
     //_PyQuad_ArrFuncs.cast[NPY_CDOUBLE] = (PyArray_VectorUnaryFunc*)quad_to_CDOUBLE;
     //_PyQuad_ArrFuncs.cast[NPY_CLONGDOUBLE] = (PyArray_VectorUnaryFunc*)quad_to_CLONGDOUBLE;
 
     /* The quad array descr */
-    quad_descr = PyObject_New(PyArray_Descr, &PyArrayDescr_Type);
+    //quad_descr = PyObject_New(PyArray_Descr, &PyArrayDescr_Type);
+    /* Cannabilize  the gcc longdouble. I have no idea why this fixes the segfaults,
+       or how it affects the performance of np.float128m but it works.
+       Change at your own risk. */
+    quad_descr = PyArray_DescrFromType(NPY_LONGDOUBLE);
     quad_descr->typeobj = &PyQuadArrType_Type;
-    quad_descr->kind = 'q';
-    quad_descr->type = 'j';
+    quad_descr->kind = 'f';
+    quad_descr->type = 'k';
     quad_descr->byteorder = '=';
     quad_descr->type_num = 0; /* assigned at registration */
-    quad_descr->elsize = 8*2;
-    quad_descr->alignment = 8;
+    quad_descr->elsize = 16;
+    quad_descr->alignment = 16;
     quad_descr->subarray = NULL;
     quad_descr->fields = NULL;
     quad_descr->names = NULL;
@@ -677,7 +705,7 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     register_cast_function(NPY_ULONGLONG, quadNum, (PyArray_VectorUnaryFunc*)ULONGLONG_to_quad);
     register_cast_function(NPY_FLOAT, quadNum, (PyArray_VectorUnaryFunc*)FLOAT_to_quad);
     register_cast_function(NPY_DOUBLE, quadNum, (PyArray_VectorUnaryFunc*)DOUBLE_to_quad);
-    register_cast_function(NPY_LONGDOUBLE, quadNum, (PyArray_VectorUnaryFunc*)LONGDOUBLE_to_quad);
+    //register_cast_function(NPY_LONGDOUBLE, quadNum, (PyArray_VectorUnaryFunc*)LONGDOUBLE_to_quad);
     //register_cast_function(NPY_CFLOAT, quadNum, (PyArray_VectorUnaryFunc*)CFLOAT_to_quad);
     //register_cast_function(NPY_CDOUBLE, quadNum, (PyArray_VectorUnaryFunc*)CDOUBLE_to_quad);
     //register_cast_function(NPY_CLONGDOUBLE, quadNum, (PyArray_VectorUnaryFunc*)CLONGDOUBLE_to_quad);

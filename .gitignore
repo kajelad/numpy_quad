@@ -1,1 +1,7 @@
 build
+build/**
+dist
+dist/**
+npquad.egg-info
+**__pycache__**
+npquad/numpy_quad.cpython*
