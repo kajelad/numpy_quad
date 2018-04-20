@@ -33,6 +33,8 @@
  */
 
 #define NPY_NO_DEPRECATED_API NPY_API_VERSION
+//#define VERBOSE
+
 #include "stdio.h"
 #include <Python.h>
 #include <numpy/arrayobject.h>
@@ -195,11 +197,15 @@ QUAD_getitem(char *ip, PyArrayObject *ap)
     descr = PyArray_DESCR(ap);
 
     if ((ap == NULL) || PyArray_ISBEHAVED_RO(ap)) {
+        #ifdef VERBOSE
         printf("getitem: well behaved\n");
+        #endif
         q = *((quad *)ip);
     }
     else {
+        #ifdef VERBOSE
         printf("getitem: swapping\n");
+        #endif
         descr->f->copyswap(&q, ip, !PyArray_ISNOTSWAPPED(ap), NULL);
     }
 
@@ -370,11 +376,9 @@ static void                                                                    \
 TYPE ## _to_quad(type *ip, quad *op, npy_intp n,                               \
                PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
 {                                                                              \
-    printf("casting %s to quad, ", #TYPE);                                     \
     double temp;                                                               \
     while (n--) {                                                              \
         temp = (double)  (*ip++);                                              \
-        printf("%lf\n", temp);                                                 \
         *op++ = (__float128) temp;                                             \
     }                                                                          \
 }
@@ -424,7 +428,6 @@ static void                                                                    \
 quad_to_ ## TYPE(quad *ip, type *op, npy_intp n,                               \
                PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
 {                                                                              \
-    printf("casting quad to %s\n", #TYPE);                                     \
     while (n--) {                                                              \
         *op++ =  (type) *ip++;                                                 \
     }                                                                          \
@@ -448,14 +451,19 @@ MAKE_QUAD_TO_T(ULONGLONG, npy_ulonglong);
 static PyObject *
 quad_arrtype_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
+    #ifdef VERBOSE
     printf("new quad\n");
+    #endif
     PyObject *obj = NULL;
     quad q = 0;
 
     if (!PyArg_ParseTuple(args, "|O", &obj)) {
         return NULL;
     }
-    if (PyUnicode_Check(obj)) {
+    if (PyObject_IsInstance(obj,(PyObject*)&PyQuadArrType_Type)) {
+        Py_INCREF(obj);
+        return obj;
+    } else if (PyUnicode_Check(obj)) {
         char* s = PyUnicode_AsUTF8(obj);
         q = strtoflt128(s, NULL);
     } else if (obj != NULL) {

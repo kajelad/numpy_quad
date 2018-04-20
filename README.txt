@@ -65,6 +65,7 @@ Interation with other numpy types
 
 Arithmetic
 	- same type +-*/^
+	- quad-double arithmetic lifted to quad precision
 
 Special functions
 
@@ -77,3 +78,6 @@ Issues
 effects this has on np.float128, using it in conjunction with np.quad is not
 recommended (as a general consideration, using np.float128 in any other context
 is also highly discouraged).
+
+- passing quads to Python int constructor results in segfault. Numpy ints
+behave as intended.
