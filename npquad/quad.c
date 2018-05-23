@@ -34,7 +34,7 @@
 #include "quad.h"
 #include "quadmath.h"
 
-#define _QUAT_EPS 1e-6
+#define _QUAD_EPS FLT128_EPSILON
 
 int
 quad_isnonzero(quad q)
@@ -88,6 +88,18 @@ quad
 quad_divide(quad q1, quad q2)
 {
    return q1 / q2;
+}
+
+quad
+quad_floor_divide(quad q1, quad q2)
+{
+   return floorq(q1 / q2);
+}
+
+quad
+quad_remainder(quad q1, quad q2)
+{
+   return q1 - q2 * floorq(q1 / q2);
 }
 /*
 quad
@@ -166,4 +178,40 @@ int
 quad_less_equal(quad q1, quad q2)
 {
    return (!quad_isnan(q1) && !quad_isnan(q2)) && (q1 <= q2);
+}
+
+int
+quad_greater(quad q1, quad q2)
+{
+    return (!quad_isnan(q1) && !quad_isnan(q2)) && (q1 > q2);
+}
+
+int
+quad_greater_equal(quad q1, quad q2)
+{
+   return (!quad_isnan(q1) && !quad_isnan(q2)) && (q1 >= q2);
+}
+
+quad
+quad_minimum(quad q1, quad q2)
+{
+    return fminq(q1, q2);
+}
+
+quad
+quad_maximum(quad q1, quad q2)
+{
+    return fmaxq(q1, q2);
+}
+
+quad
+quad_sin(quad q)
+{
+    return sinq(q);
+}
+
+quad
+quad_cos(quad q)
+{
+    return cosq(q);
 }

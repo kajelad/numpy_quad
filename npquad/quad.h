@@ -49,6 +49,8 @@ quad quad_add(quad q1, quad q2);
 quad quad_subtract(quad q1, quad q2);
 quad quad_multiply(quad q1, quad q2);
 quad quad_divide(quad q1, quad q2);
+quad quad_floor_divide(quad q1, quad q2);
+quad quad_remainder(quad q1, quad q2);
 //quad quad_multiply_scalar(quad q, double s);
 //quad quad_divide_scalar(quad q, double s);
 quad quad_log(quad q);
@@ -62,6 +64,12 @@ int quad_equal(quad q1, quad q2);
 int quad_not_equal(quad q1, quad q2);
 int quad_less(quad q1, quad q2);
 int quad_less_equal(quad q1, quad q2);
+int quad_greater(quad q1, quad q2);
+int quad_greater_equal(quad q1, quad q2);
+quad quad_minimum(quad q1, quad q2);
+quad quad_maximum(quad q1, quad q2);
+quad quad_sin(quad q);
+quad quad_cos(quad q);
 
 #ifdef __cplusplus
 }

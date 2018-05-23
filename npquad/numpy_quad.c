@@ -371,6 +371,20 @@ QUAD_dot(char *ip1, npy_intp is1, char *ip2, npy_intp is2, char *op, npy_intp n,
     *op = tmp;
 }
 
+#ifdef VERBOSE
+#define MAKE_T_TO_QUAD(TYPE, type)                                             \
+static void                                                                    \
+TYPE ## _to_quad(type *ip, quad *op, npy_intp n,                               \
+               PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
+{                                                                              \
+    printf("converting %s to quad\n", #type);                                  \
+    double temp;                                                               \
+    while (n--) {                                                              \
+        temp = (double)  (*ip++);                                              \
+        *op++ = (__float128) temp;                                             \
+    }                                                                          \
+}
+#else
 #define MAKE_T_TO_QUAD(TYPE, type)                                             \
 static void                                                                    \
 TYPE ## _to_quad(type *ip, quad *op, npy_intp n,                               \
@@ -382,6 +396,7 @@ TYPE ## _to_quad(type *ip, quad *op, npy_intp n,                               \
         *op++ = (__float128) temp;                                             \
     }                                                                          \
 }
+#endif
 
 MAKE_T_TO_QUAD(FLOAT, npy_float);
 MAKE_T_TO_QUAD(DOUBLE, npy_double);
@@ -423,6 +438,18 @@ static void register_cast_function(int sourceType, int destType, PyArray_VectorU
     Py_DECREF(descr);
 }
 
+#ifdef VERBOSE
+#define MAKE_QUAD_TO_T(TYPE, type)                                             \
+static void                                                                    \
+quad_to_ ## TYPE(quad *ip, type *op, npy_intp n,                               \
+               PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
+{                                                                              \
+    printf("converting quad to %s\n", #type);                                  \
+    while (n--) {                                                              \
+        *op++ =  (type) *ip++;                                                 \
+    }                                                                          \
+}
+#else
 #define MAKE_QUAD_TO_T(TYPE, type)                                             \
 static void                                                                    \
 quad_to_ ## TYPE(quad *ip, type *op, npy_intp n,                               \
@@ -432,9 +459,10 @@ quad_to_ ## TYPE(quad *ip, type *op, npy_intp n,                               \
         *op++ =  (type) *ip++;                                                 \
     }                                                                          \
 }
+#endif
 
-MAKE_QUAD_TO_T(FLOAT, npy_uint32);
-MAKE_QUAD_TO_T(DOUBLE, npy_uint64);
+MAKE_QUAD_TO_T(FLOAT, npy_float64);
+MAKE_QUAD_TO_T(DOUBLE, npy_double);
 //MAKE_QUAD_TO_T(LONGDOUBLE, npy_longdouble);
 MAKE_QUAD_TO_T(BOOL, npy_bool);
 MAKE_QUAD_TO_T(BYTE, npy_byte);
@@ -511,6 +539,9 @@ quad_arrtype_hash(PyObject *o)
 static PyObject *
 quad_arrtype_repr(PyObject *o)
 {
+    #ifdef VERBOSE
+    printf("getting quad string representation\n");
+    #endif
     char str[128];
     quad q = ((PyQuadScalarObject *)o)->obval;
     quadmath_snprintf(str, sizeof(str), "%.36Qg", q);
@@ -520,6 +551,9 @@ quad_arrtype_repr(PyObject *o)
 static PyObject *
 quad_arrtype_str(PyObject *o)
 {
+    #ifdef VERBOSE
+    printf("casting quad to string\n");
+    #endif
     char str[128];
     quad q = ((PyQuadScalarObject *)o)->obval;
     quadmath_snprintf(str, sizeof(str), "%.36Qg", q);
@@ -550,6 +584,8 @@ UNARY_UFUNC(log, quad)
 UNARY_UFUNC(exp, quad)
 UNARY_UFUNC(negative, quad)
 //UNARY_UFUNC(conjugate, quad)
+UNARY_UFUNC(sin, quad)
+UNARY_UFUNC(cos, quad)
 
 #define BINARY_GEN_UFUNC(name, func_name, arg_type, ret_type)   \
 static void                                                     \
@@ -573,12 +609,19 @@ BINARY_UFUNC(add, quad)
 BINARY_UFUNC(subtract, quad)
 BINARY_UFUNC(multiply, quad)
 BINARY_UFUNC(divide, quad)
+BINARY_UFUNC(floor_divide, quad)
+BINARY_UFUNC(remainder, quad)
 BINARY_UFUNC(power, quad)
 BINARY_UFUNC(copysign, quad)
 BINARY_UFUNC(equal, npy_bool)
 BINARY_UFUNC(not_equal, npy_bool)
 BINARY_UFUNC(less, npy_bool)
 BINARY_UFUNC(less_equal, npy_bool)
+BINARY_UFUNC(greater, npy_bool)
+BINARY_UFUNC(greater_equal, npy_bool)
+BINARY_UFUNC(minimum, quad)
+BINARY_UFUNC(maximum, quad)
+
 
 //BINARY_SCALAR_UFUNC(multiply, quad)
 //BINARY_SCALAR_UFUNC(divide, quad)
@@ -719,14 +762,14 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     //register_cast_function(NPY_CLONGDOUBLE, quadNum, (PyArray_VectorUnaryFunc*)CLONGDOUBLE_to_quad);
 
 #define REGISTER_UFUNC(name)\
-    PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(numpy_dict, #name),\
+    PyUFunc_RegisterLoopForType((PyUFuncObject *)PyObject_GetAttrString(numpy, #name),\
             quad_descr->type_num, quad_##name##_ufunc, arg_types, NULL)
 
 #define REGISTER_SCALAR_UFUNC(name)\
     PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(numpy_dict, #name),\
             quad_descr->type_num, quad_##name##_scalar_ufunc, arg_types, NULL)
 
-    /* quat -> bool */
+    /* quad -> bool */
     arg_types[0] = quad_descr->type_num;
     arg_types[1] = NPY_BOOL;
 
@@ -738,7 +781,7 @@ PyMODINIT_FUNC initnumpy_quad(void) {
 
     //REGISTER_UFUNC(absolute);
 
-    /* quat -> quat */
+    /* quad -> quad */
     arg_types[1] = quad_descr->type_num;
 
     REGISTER_UFUNC(log);
@@ -746,8 +789,10 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     REGISTER_UFUNC(negative);
     //REGISTER_UFUNC(conjugate);
     REGISTER_UFUNC(absolute);
+    REGISTER_UFUNC(sin);
+    REGISTER_UFUNC(cos);
 
-    /* quat, quat -> bool */
+    /* quad, quad -> bool */
 
     arg_types[2] = NPY_BOOL;
 
@@ -755,8 +800,10 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     REGISTER_UFUNC(not_equal);
     REGISTER_UFUNC(less);
     REGISTER_UFUNC(less_equal);
+    REGISTER_UFUNC(greater);
+    REGISTER_UFUNC(greater_equal);
 
-    /* quat, double -> quat */
+    /* quad, double -> quad */
 
     arg_types[1] = NPY_DOUBLE;
     arg_types[2] = quad_descr->type_num;
@@ -765,7 +812,7 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     //REGISTER_SCALAR_UFUNC(divide);
     //REGISTER_SCALAR_UFUNC(power);
 
-    /* quat, quat -> quat */
+    /* quad, quad -> quad */
 
     arg_types[1] = quad_descr->type_num;
 
@@ -773,8 +820,13 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     REGISTER_UFUNC(subtract);
     REGISTER_UFUNC(multiply);
     REGISTER_UFUNC(divide);
+    REGISTER_UFUNC(floor_divide);
+    REGISTER_UFUNC(remainder);
     REGISTER_UFUNC(power);
     REGISTER_UFUNC(copysign);
+    REGISTER_UFUNC(minimum);
+    //This causes a segfault if uncommented
+    //REGISTER_UFUNC(maximum);
 
     PyModule_AddObject(m, "quad", (PyObject *)&PyQuadArrType_Type);
 
