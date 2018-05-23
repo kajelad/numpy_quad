@@ -26,6 +26,13 @@ run:
 	sudo python3 setup.py develop
 	sudo python3 setup.py clean   #optional
 
+Optionally, if root access is unavailable, run:
+
+	python3 setup.py develop --user
+
+In this case, the base path to the repository will have to be added to
+PYTHONPATH manually.
+
 To uninstall:
 
 	sudo python3 setup.py develop --uninstall
