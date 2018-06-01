@@ -30,7 +30,7 @@ Optionally, if root access is unavailable, run:
 
 	python3 setup.py develop --user
 
-In this case, the base path to the repository will have to be added to
+In this case, the base path to the repository may have to be added to
 PYTHONPATH manually.
 
 To uninstall:
