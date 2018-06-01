@@ -205,6 +205,12 @@ quad_maximum(quad q1, quad q2)
 }
 
 quad
+quad_sqrt(quad q)
+{
+    return sqrtq(q);
+}
+
+quad
 quad_sin(quad q)
 {
     return sinq(q);

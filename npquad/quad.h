@@ -68,6 +68,7 @@ int quad_greater(quad q1, quad q2);
 int quad_greater_equal(quad q1, quad q2);
 quad quad_minimum(quad q1, quad q2);
 quad quad_maximum(quad q1, quad q2);
+quad quad_sqrt(quad q);
 quad quad_sin(quad q);
 quad quad_cos(quad q);
 
