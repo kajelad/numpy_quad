@@ -368,7 +368,7 @@ QUAD_dot(char *ip1, npy_intp is1, char *ip2, npy_intp is2, char *op, npy_intp n,
         tmp += (*((quad *)ip1)) * (*((quad *)ip2));
     }
 
-    *op = tmp;
+    *((quad *) op) = tmp;
 }
 
 #ifdef VERBOSE

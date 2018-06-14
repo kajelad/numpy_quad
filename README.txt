@@ -79,8 +79,6 @@ Special functions
 -------------------------------------------------------------------------------
 Issues
 
-- dotfunc currently bugged, np.dot and the @ operator do not function.
-
 - cannablizes the dtype descriptor of the np.float128 dtype. It is unclear what
 effects this has on np.float128, using it in conjunction with np.quad is not
 recommended (as a general consideration, using np.float128 in any other context
