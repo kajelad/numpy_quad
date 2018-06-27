@@ -88,3 +88,15 @@ highly platform specific).
 - passing quads into the constructors for other numerical types may cause
 memory issues. Using the quad.astype method is functional and preferred, even
 for scalar values
+
+    q = np.quad("1.7")
+    float_array = np.empty(16, dtype=np.float64)
+
+    # Don't do these. They may result in segfault
+    float_array[0] = q
+    f = float(q)
+
+    #instead use these patterns
+    float_array[0] = q.astype(np.float64)
+    f = q.astype(np.float64)
+    
