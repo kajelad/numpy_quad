@@ -583,7 +583,9 @@ UNARY_UFUNC(absolute, quad)
 UNARY_UFUNC(log, quad)
 UNARY_UFUNC(exp, quad)
 UNARY_UFUNC(negative, quad)
-//UNARY_UFUNC(conjugate, quad)
+UNARY_UFUNC(floor, quad)
+UNARY_UFUNC(ceil, quad)
+UNARY_UFUNC(rint, quad)
 UNARY_UFUNC(square, quad)
 UNARY_UFUNC(sqrt, quad)
 UNARY_UFUNC(sin, quad)
@@ -789,8 +791,10 @@ PyMODINIT_FUNC initnumpy_quad(void) {
     REGISTER_UFUNC(log);
     REGISTER_UFUNC(exp);
     REGISTER_UFUNC(negative);
-    //REGISTER_UFUNC(conjugate);
     REGISTER_UFUNC(absolute);
+    REGISTER_UFUNC(floor);
+    REGISTER_UFUNC(ceil);
+    REGISTER_UFUNC(rint);
     REGISTER_UFUNC(square);
     REGISTER_UFUNC(sqrt);
     REGISTER_UFUNC(sin);

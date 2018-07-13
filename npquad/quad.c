@@ -101,19 +101,7 @@ quad_remainder(quad q1, quad q2)
 {
    return q1 - q2 * floorq(q1 / q2);
 }
-/*
-quad
-quad_multiply_scalar(quad q, double s)
-{
-   return (quad) {s*q.w, s*q.x, s*q.y, s*q.z};
-}
 
-quad
-quad_divide_scalar(quad q, double s)
-{
-   return (quad) {q.w/s, q.x/s, q.y/s, q.z/s};
-}
-*/
 quad
 quad_log(quad q)
 {
@@ -131,25 +119,13 @@ quad_power(quad q, quad p)
 {
    return powq(q, p);
 }
-/*
-quad
-quad_power_scalar(quad q, double p)
-{
-   return quad_exp(quad_multiply_scalar(quad_log(q), p));
-}
-*/
+
 quad
 quad_negative(quad q)
 {
    return -q;
 }
-/*
-quad
-quad_conjugate(quad q)
-{
-   return (quad) {q.w, -q.x, -q.y, -q.z};
-}
-*/
+
 quad
 quad_copysign(quad q1, quad q2)
 {
@@ -190,6 +166,24 @@ int
 quad_greater_equal(quad q1, quad q2)
 {
    return (!quad_isnan(q1) && !quad_isnan(q2)) && (q1 >= q2);
+}
+
+quad
+quad_floor(quad q)
+{
+    return floorq(q);
+}
+
+quad
+quad_ceil(quad q)
+{
+    return ceilq(q);
+}
+
+quad
+quad_rint(quad q)
+{
+    return rintq(q);
 }
 
 quad
