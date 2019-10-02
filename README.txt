@@ -13,8 +13,8 @@ to the restrictions therein.
 -------------------------------------------------------------------------------
 Compatibility
 
-Designed for use in Linus-x86-64 architecture with gcc-5+. Untested on other
-platforms and inlikely to be functional.
+Designed for use in Linux-x86-64 architecture with gcc-5+. Untested on other
+platforms.
 
 -------------------------------------------------------------------------------
 Installation
@@ -49,54 +49,59 @@ Use
 To add the quad type to numpy, simply import the module. The quad type will be
 appended to numpy's type dict automatically as np.quad
 
-	>>> import numpy as np
-        >>> import npquad
-        >>> ar = np.zeros((4, 4), dtype=np.quad)
+    >>> import numpy as np
+    >>> import npquad
+    >>> ar = np.zeros((4, 4), dtype=np.quad)
 
 -------------------------------------------------------------------------------
 Features
 
-Basic features
-	- scalar type initialization
+Objects:
+- scalar, array, ndarray
 
-Array implementation
-	- 1d, nd arrays
+Functionality:
 
-Array algorithms
-	- zeros
-	- fill
+- initialization from strings via constructor
 
-Interation with other numpy types
-	- casting to other simple numercal types
-	- no.float128 interaction unsupported
+- upcasting via astype
 
-Arithmetic
-	- same type +-*/^
-	- quad-double arithmetic lifted to quad precision
+- all array indexing
 
-Special functions
+- scalar/array arithmetic, basic ndarray methods
+
+- Interation with other numpy types
+    - quad-double arithmetic lifted to quad precision
+    - casting to/from other simple numercal types
+    - np.float128 unsupported
+
+- Some pecial functions
+
+Visual:
+
+- String outputs at 36 decimal digits of precision for invertible conversion
+to/from strings. trailing digits are not within binary resolution.
 
 -------------------------------------------------------------------------------
 Issues
 
 - cannablizes the dtype descriptor of the np.float128 dtype. It is unclear what
-effects this has on np.float128, using it in conjunction with np.quad is not
-recommended (as a general consideration, using np.float128 in any other context
-is also highly discouraged, it is poorly implemented, poorly maintained, and
-highly platform specific).
+effects this has on np.float128; using it in conjunction with np.quad is even
+less recommended than usual.
 
-- passing quads into the constructors for other numerical types may cause
-memory issues. Using the quad.astype method is functional and preferred, even
-for scalar values
+- passing quads into the constructors for other numerical types is
+unimplemented and may cause memory issues. Using the quad.astype method is
+functional and preferred, even for scalar values.
 
     q = np.quad("1.7")
     float_array = np.empty(16, dtype=np.float64)
 
-    # Don't do these. They may result in segfault
+    # Don't do these. They may result in a segfault
     float_array[0] = q
     f = float(q)
 
-    #instead use these patterns
+    # Instead use these patterns
     float_array[0] = q.astype(np.float64)
     f = q.astype(np.float64)
     
+- NotImplementedError on various numpy functionality
+    = matmul, einsum
